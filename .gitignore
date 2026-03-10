@@ -1,0 +1,23 @@
+# Python
+venv/
+.env
+__pycache__/
+*.pyc
+
+# dbt
+target/
+logs/
+dbt_packages/
+
+# vim
+*.swp
+
+# credentials
+*.json
+*.pem
+*.key
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
