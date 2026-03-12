@@ -8,7 +8,7 @@ The goal is to simulate a real-world analytics pipeline similar to the printer b
 
 Original pipeline (legacy architecture):
 
-MySQL → AWS Glue → MySQL
+RDS (MySQL) → AWS Glue → RDS (MySQL)
 
 This project rebuilds the pipeline using a modern data stack:
 
@@ -16,9 +16,17 @@ Cloud SQL (MySQL) → Datastream (CDC) → BigQuery → dbt → Orchestration
 
 Operational data is ingested from a transactional database and transformed into analytics-ready datasets using a layered data warehouse design.
 
+A key design goal of this project is to simulate **multi-subsidiary data environments**, where multiple companies share the same data structure but maintain separate operational schemas.
+
+Each subsidiary stores its data in a **separate schema**, while the analytics transformations are executed using **a single dbt project and shared transformation logic**.
+
+In the initial phase, existing business SQL logic was migrated directly into dbt models to reproduce key business datamarts quickly and accurately.
+
+Future iterations may further refactor the transformation layer into staging and intermediate models for improved modularity and reuse.
+
 ---
 
-## Architecture
+# Architecture
 
 The platform follows a modern data architecture:
 
@@ -36,9 +44,45 @@ SQL / BI Analysis
 
 The system separates operational storage from analytical workloads, enabling scalable and maintainable data modeling.
 
+The architecture also supports **multiple subsidiaries**, where operational data from different schemas is replicated into separate raw datasets in BigQuery.
+
+These datasets share the same schema structure but represent different companies.
+
+All subsidiaries are processed using **the same dbt transformation framework**, demonstrating how a centralized analytics platform can support multiple operational tenants.
+
 ---
 
-## Data Source
+# Multi-Subsidiary Data Design
+
+In many real-world enterprise systems, multiple subsidiaries operate independent transactional databases but follow similar schemas.
+
+This project simulates that scenario.
+
+Example operational schemas:
+
+Cloud SQL
+
+a0a2 schema  
+c0a2 schema  
+
+Each schema represents a different subsidiary.
+
+Datastream replicates these schemas into **separate raw datasets in BigQuery**:
+
+BigQuery
+
+raw_a0a2  
+raw_c0a2  
+
+Although the data is stored in separate schemas, the table structures are identical.
+
+This allows the analytics layer to reuse **a single set of dbt models** to process data across multiple subsidiaries.
+
+This design demonstrates how a centralized data platform can support multi-tenant operational systems while maintaining reusable transformation logic.
+
+---
+
+# Data Source
 
 The operational database is hosted on Cloud SQL (MySQL).
 
@@ -55,33 +99,53 @@ Example tables include:
 
 These tables represent operational events such as invoices and their related consumables.
 
+Each subsidiary maintains its own schema containing these tables.
+
 ---
 
-## Data Ingestion
+# Data Ingestion
 
 Operational data is ingested from Cloud SQL into BigQuery using Google Cloud Datastream, which enables Change Data Capture (CDC) replication.
 
 Datastream continuously captures database changes from the MySQL binlog and replicates them into BigQuery.
 
+Each operational schema is replicated into a **separate dataset in BigQuery**, preserving isolation between subsidiaries.
+
+Example mapping:
+
+Cloud SQL schema → BigQuery dataset
+
+a0a2 → raw_a0a2  
+c0a2 → raw_c0a2  
+
 This approach reflects production best practices where operational databases are replicated into analytics warehouses using CDC pipelines.
 
 ---
 
-## Data Warehouse Layers
+# Data Warehouse Layers
 
 The BigQuery warehouse follows a layered data modeling approach.
 
-### Raw Layer
+## Raw Layer
 
 Replicated source tables from Cloud SQL via Datastream.
 
+Each subsidiary has its own dataset:
+
+raw_a0a2  
+raw_c0a2  
+
+These datasets contain replicated operational tables.
+
 Examples:
 
-- raw_equipment
-- raw_print_detail
-- raw_toner_detail
+- ct010dl_new
+- ct020dl_new
+- eq010dl_new
 
-### Staging Layer
+---
+
+## Staging Layer
 
 Built using dbt.
 
@@ -91,7 +155,11 @@ Responsibilities:
 - cleaning inconsistent data
 - deriving intermediate fields
 
-### Mart Layer
+The staging models normalize raw data into consistent analytical structures.
+
+---
+
+## Mart Layer
 
 Business-level models used for analytics.
 
@@ -101,9 +169,11 @@ Example outputs:
 - toner_usage_summary
 - device_utilization_metrics
 
+The same mart models are executed for each subsidiary dataset.
+
 ---
 
-## Transformation Layer
+# Transformation Layer
 
 All transformations are implemented using dbt.
 
@@ -118,9 +188,13 @@ Example transformation flow:
 
 raw → staging → mart
 
+A single dbt project is used to process data across multiple subsidiaries.
+
+Schema parameters allow the same SQL models to run against different datasets, ensuring reusable transformation logic.
+
 ---
 
-## Orchestration
+# Orchestration
 
 Pipeline orchestration is designed to support production workflows.
 
@@ -131,27 +205,27 @@ Two orchestration approaches are considered:
 
 Example workflow:
 
-Datastream replication
-↓
-dbt run / dbt build
+Datastream replication  
+↓  
+dbt run / dbt build  
 
 ---
 
-## Technology Stack
+# Technology Stack
 
-Layer | Technology
-------|-------------
-Source Database | Cloud SQL (MySQL)
-CDC Replication | Datastream
-Data Warehouse | BigQuery
-Transformation | dbt
-Orchestration | Cloud Composer / Airflow
-Compute | Cloud Run
-Language | SQL / Python
+| Layer | Technology |
+|------|-------------|
+| Source Database | Cloud SQL (MySQL) |
+| CDC Replication | Datastream |
+| Data Warehouse | BigQuery |
+| Transformation | dbt |
+| Orchestration | Cloud Composer / Airflow |
+| Compute | Cloud Run |
+| Language | SQL / Python |
 
 ---
 
-## Project Goal
+# Project Goal
 
 This project demonstrates how a production-style analytics platform can be designed using modern cloud data tools.
 
@@ -159,6 +233,7 @@ Key skills demonstrated include:
 
 - data pipeline architecture design
 - CDC-based ingestion from operational databases
+- multi-subsidiary data platform design
 - warehouse modeling with layered architecture
 - transformation with dbt
 - workflow orchestration
@@ -166,7 +241,7 @@ Key skills demonstrated include:
 
 ---
 
-## Sample Data
+# Sample Data
 
 The sample data used in this project is derived from production-like schemas but has been anonymized and modified for demonstration purposes.
 
@@ -174,25 +249,26 @@ No personally identifiable information (PII) or sensitive business information i
 
 ---
 
-## Project Structure
+# Project Structure
 
 aurora-data-platform-demo
-
-├── ingestion
 ├── dbt
 ├── sql
 ├── architecture
 └── README.md
 
+
+
 ---
 
-## Architecture Diagram
+# Architecture Diagram
 
 ```mermaid
 flowchart LR
 
 subgraph Source
-A[Cloud SQL MySQL]
+A1[Cloud SQL MySQL - a0a2]
+A2[Cloud SQL MySQL - c0a2]
 end
 
 subgraph CDC
@@ -200,7 +276,8 @@ B[Datastream]
 end
 
 subgraph Data Warehouse
-C[BigQuery Raw]
+C1[BigQuery raw_a0a2]
+C2[BigQuery raw_c0a2]
 D[BigQuery Staging]
 E[BigQuery Mart]
 end
@@ -217,9 +294,12 @@ subgraph Analytics
 H[SQL / BI / Data Analysis]
 end
 
-A --> B
-B --> C
-C --> F
+A1 --> B
+A2 --> B
+B --> C1
+B --> C2
+C1 --> F
+C2 --> F
 F --> D
 D --> E
 E --> H
