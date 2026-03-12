@@ -2,110 +2,226 @@
 
 ## Overview
 
-This project demonstrates a modern data platform architecture built on GCP.  
-The goal is to simulate a real-world business pipeline similar to the printer
-business workflow previously implemented on AWS.
+This project demonstrates a production-style data platform architecture built on Google Cloud Platform (GCP).
 
-Original pipeline (AWS):
+The goal is to simulate a real-world analytics pipeline similar to the printer business workflow previously implemented on AWS.
+
+Original pipeline (legacy architecture):
 
 MySQL → AWS Glue → MySQL
 
 This project rebuilds the pipeline using a modern data stack:
 
-Cloud SQL (MySQL) → Python ETL → BigQuery → dbt → Orchestration
+Cloud SQL (MySQL) → Datastream (CDC) → BigQuery → dbt → Orchestration
+
+Operational data is ingested from a transactional database and transformed into analytics-ready datasets using a layered data warehouse design.
 
 ---
 
 ## Architecture
 
-Operational Database
+The platform follows a modern data architecture:
 
 Cloud SQL (MySQL)
-
-Stores operational data such as:
-
-- equipment
-- print_detail
-- toner_detail
-
-Data Ingestion Layer
-
-Python ETL
-
-Responsible for:
-
-- extracting data from MySQL
-- loading data into BigQuery raw layer
-- initial version performs full overwrite
-
 ↓
-
-Data Warehouse
-
-BigQuery
-
-Data is organized into layers:
-
-raw  
-    ingestion tables from MySQL
-
-staging  
-    cleaned and standardized tables created by dbt
-
-mart  
-    business-level aggregated tables
-
+Datastream (CDC Replication)
 ↓
+BigQuery Raw Layer
+↓
+dbt Transformations
+↓
+BigQuery Analytics Layer
+↓
+SQL / BI Analysis
 
-Transformation Layer
+The system separates operational storage from analytical workloads, enabling scalable and maintainable data modeling.
 
-dbt
+---
 
-Responsible for:
+## Data Source
 
-- defining sources
+The operational database is hosted on Cloud SQL (MySQL).
+
+Example tables include:
+
+- ct010dl_new
+- ct020dl_new
+- ct020bv2dl_new
+- eq010dl_new
+- sd022dl_new
+- sd023dl_new
+- mm000dl_new
+- CONSUMP_DETAIL
+
+These tables represent operational events such as invoices and their related consumables.
+
+---
+
+## Data Ingestion
+
+Operational data is ingested from Cloud SQL into BigQuery using Google Cloud Datastream, which enables Change Data Capture (CDC) replication.
+
+Datastream continuously captures database changes from the MySQL binlog and replicates them into BigQuery.
+
+This approach reflects production best practices where operational databases are replicated into analytics warehouses using CDC pipelines.
+
+---
+
+## Data Warehouse Layers
+
+The BigQuery warehouse follows a layered data modeling approach.
+
+### Raw Layer
+
+Replicated source tables from Cloud SQL via Datastream.
+
+Examples:
+
+- raw_equipment
+- raw_print_detail
+- raw_toner_detail
+
+### Staging Layer
+
+Built using dbt.
+
+Responsibilities:
+
+- standardizing column names
+- cleaning inconsistent data
+- deriving intermediate fields
+
+### Mart Layer
+
+Business-level models used for analytics.
+
+Example outputs:
+
+- device_print_volume
+- toner_usage_summary
+- device_utilization_metrics
+
+---
+
+## Transformation Layer
+
+All transformations are implemented using dbt.
+
+dbt is responsible for:
+
+- defining sources from raw tables
 - building staging models
 - building mart models
-- managing SQL lineage and DAG
+- managing SQL lineage and dependency DAG
 
+Example transformation flow:
+
+raw → staging → mart
+
+---
+
+## Orchestration
+
+Pipeline orchestration is designed to support production workflows.
+
+Two orchestration approaches are considered:
+
+- Cloud Composer (Airflow)
+- Cloud Run scheduled jobs
+
+Example workflow:
+
+Datastream replication
 ↓
-
-Orchestration Layer
-
-Two orchestration approaches will be evaluated:
-
-
-Airflow / Cloud Composer DAG
-
-Example pipeline DAG:
-
-extract_mysql_to_bq  
-        ↓  
-dbt_build  
+dbt run / dbt build
 
 ---
 
 ## Technology Stack
 
-Cloud SQL (MySQL)  
-BigQuery  
-Python  
-dbt  
-Cloud Run  
-Airflow / Cloud Composer  
+Layer | Technology
+------|-------------
+Source Database | Cloud SQL (MySQL)
+CDC Replication | Datastream
+Data Warehouse | BigQuery
+Transformation | dbt
+Orchestration | Cloud Composer / Airflow
+Compute | Cloud Run
+Language | SQL / Python
 
 ---
 
 ## Project Goal
 
-The goal of this project is to demonstrate how a production-style data
-pipeline can be designed and implemented using modern data platform tools.
+This project demonstrates how a production-style analytics platform can be designed using modern cloud data tools.
 
-This project serves as a portfolio project for demonstrating data engineering
-skills including:
+Key skills demonstrated include:
 
-- data ingestion
-- data warehouse modeling
-- transformation using dbt
+- data pipeline architecture design
+- CDC-based ingestion from operational databases
+- warehouse modeling with layered architecture
+- transformation with dbt
 - workflow orchestration
-- cloud architecture design
+- cloud-native data platform design
+
+---
+
+## Sample Data
+
+The sample data used in this project is derived from production-like schemas but has been anonymized and modified for demonstration purposes.
+
+No personally identifiable information (PII) or sensitive business information is included.
+
+---
+
+## Project Structure
+
+aurora-data-platform-demo
+
+├── ingestion
+├── dbt
+├── sql
+├── architecture
+└── README.md
+
+---
+
+## Architecture Diagram
+
+```mermaid
+flowchart LR
+
+subgraph Source
+A[Cloud SQL MySQL]
+end
+
+subgraph CDC
+B[Datastream]
+end
+
+subgraph Data Warehouse
+C[BigQuery Raw]
+D[BigQuery Staging]
+E[BigQuery Mart]
+end
+
+subgraph Transformation
+F[dbt Models]
+end
+
+subgraph Orchestration
+G[Airflow / Cloud Composer]
+end
+
+subgraph Analytics
+H[SQL / BI / Data Analysis]
+end
+
+A --> B
+B --> C
+C --> F
+F --> D
+D --> E
+E --> H
+G --> F
+```
