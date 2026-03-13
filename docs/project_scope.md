@@ -2,107 +2,104 @@
 
 ## Objective
 
-The objective of this project is to build a production-style data platform demo that simulates a real-world business analytics pipeline.
+The objective of this project is to design and implement a production-style data platform that simulates a real-world business analytics pipeline.
 
-The pipeline ingests operational data from MySQL, loads it into BigQuery, and performs transformations using dbt.
+The platform ingests operational data from MySQL, replicates it into BigQuery using Change Data Capture (CDC), and transforms the data into analytics-ready datasets using dbt.
 
 This project also simulates a **multi-subsidiary data environment**, where multiple operational schemas represent different companies with similar data structures.
 
-Each subsidiary stores its data in a separate schema, while the analytics layer uses **a single dbt project to process all subsidiaries using shared transformation logic**.
+Each subsidiary stores operational data in a separate schema, while the analytics layer processes all subsidiaries using **a single dbt project with shared transformation logic**.
 
-The final goal is to orchestrate the pipeline using a workflow engine.
+The final objective is to orchestrate the pipeline using a workflow engine to simulate a production data platform environment.
 
 ---
 
 ## Pipeline Overview
 
+The data pipeline follows a modern cloud data architecture:
 Cloud SQL (MySQL)
-
 ↓
-
-Datastream (CDC replication)
-
+Datastream (CDC Replication)
 ↓
-
-BigQuery raw datasets
-
+BigQuery Raw Datasets
 ↓
-
-dbt transformation
-
+dbt Transformations (Staging → Datamart)
 ↓
+Analytics Tables / BI
 
-analytics tables
+
+Operational data is replicated using CDC and transformed through a layered data warehouse modeling approach.
 
 ---
 
 ## Multi-Subsidiary Design
 
-To simulate a realistic enterprise environment, this project includes multiple subsidiaries.
+To simulate a realistic enterprise environment, this project models multiple subsidiaries operating similar transactional systems.
 
-Each subsidiary maintains a separate operational schema but shares the same table structure.
+Each subsidiary maintains a separate operational schema while sharing the same data structure.
 
-Example structure:
+Example operational schemas:
 
-Cloud SQL schemas
+Cloud SQL
 
-a0a2  
-c0a2  
+a0a2
+c0a2
 
-Datastream replicates these schemas into BigQuery raw datasets:
+Datastream replicates these schemas into separate BigQuery datasets:
+raw_a0a2
+raw_c0a2
 
-raw_a0a2  
-raw_c0a2  
 
-Although the data is stored in separate datasets, the schema structure is identical.
+Although the data is stored in separate datasets, the table structures remain identical.
 
-This allows the analytics platform to reuse **a single dbt project** to process data across all subsidiaries.
+The analytics layer processes these datasets using **a shared dbt transformation framework**, allowing the platform to reuse transformation logic across subsidiaries.
 
-This design demonstrates how a centralized analytics platform can support **multiple operational tenants while maintaining reusable transformation logic**.
+This approach demonstrates how a centralized analytics platform can support **multi-tenant operational systems while maintaining reusable transformation logic**.
 
 ---
 
 ## Project Phases
 
-### Phase 1 — Project foundation
+### Phase 1 — Platform Foundation
 
-- Setup Git repository
-- Setup dbt with BigQuery
-- Run initial dbt models
+- Initialize Git repository
+- Configure dbt with BigQuery
+- Establish project structure and baseline models
 
-### Phase 2 — Data ingestion layer
+### Phase 2 — Data Ingestion Layer
 
-- Build MySQL to BigQuery ingestion pipeline
+- Implement MySQL to BigQuery ingestion pipeline
 - Configure Datastream CDC replication
-- Load raw tables into BigQuery datasets
+- Replicate operational schemas into BigQuery raw datasets
 
-### Phase 3 — Data warehouse modeling
+### Phase 3 — Data Warehouse Modeling
 
-- Define dbt sources
-- Create staging models
-- Create mart models
-- Support multi-subsidiary transformations using shared dbt logic
+- Define dbt sources for replicated tables
+- Implement staging models for type normalization
+- Build datamart models containing business logic
+- Support multi-subsidiary processing using shared dbt macros
 
-### Phase 4 — Orchestration
+### Phase 4 — Pipeline Orchestration
 
 - Implement workflow orchestration
-- Compare Cloud Run vs Airflow approaches
+- Evaluate orchestration approaches (Cloud Run vs Airflow)
 
-### Phase 5 — Production hardening
+### Phase 5 — Production Hardening
 
-- Add data tests
-- Improve documentation
-- Finalize architecture design
+- Implement data quality tests
+- Improve project documentation
+- Finalize architecture and repository structure
 
 ---
 
 ## Expected Outcomes
 
-By completing this project, the following capabilities will be demonstrated:
+By completing this project, the following capabilities are demonstrated:
 
-- designing a modern data platform architecture
+- designing modern cloud data platform architectures
 - implementing CDC-based ingestion pipelines
-- supporting multi-subsidiary data platforms
-- building reusable dbt data warehouse models
-- orchestrating data pipelines
-- managing a production-style Git project
+- supporting multi-subsidiary (multi-tenant) data platforms
+- building reusable data warehouse transformations using dbt
+- implementing layered data warehouse modeling (raw → staging → datamart)
+- orchestrating production-style data pipelines
+- maintaining a production-style Git repository structure

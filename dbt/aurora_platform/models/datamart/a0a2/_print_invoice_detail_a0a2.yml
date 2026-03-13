@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: print_invoice_detail_a0a2
+    description: A0A2 列印請款明細
+    tests:
+      - unique:
+          column_name: "CONCAT(CTNO, '|', MARA, '|', MACNO, '|', CREATE_NO)"
+          config:
+            severity: warn
+    columns:
+      - name: CTNO
+        description: 合約編號
+        tests:
+          - not_null
+      - name: MARA
+        description: 機型
+        tests:
+          - not_null
+      - name: MACNO
+        description: 機號
+        tests:
+          - not_null
+      - name: INVOICE_DT
+        description: 發票日期
+        tests:
+          - not_null
