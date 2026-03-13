@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+  - name: raw_a0a2
+    database: dbt-learning-489806
+    schema: raw_a0a2
+    tables:
+      - name: ct010dl_new
+      - name: ct020dl_new
+      - name: ct020bv2dl_new
+      - name: eq010dl_new
+      - name: sd022dl_new
+      - name: sd023dl_new
+      - name: mm000dl_new
+      - name: CONSUMP_DETAIL

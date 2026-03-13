@@ -1,0 +1,23 @@
+version: 2
+
+models:
+  - name: equipmaster_a0a2
+    description: A0A2 合約設備主檔
+    tests:
+      - unique:
+          column_name: "CONCAT(MARA, '|', MACNO, '|', CTNO)"
+          config:
+            severity: warn
+    columns:
+      - name: MARA
+        description: 機型
+        tests:
+          - not_null
+      - name: MACNO
+        description: 機號
+        tests:
+          - not_null
+      - name: CTNO
+        description: 合約編號
+        tests:
+          - not_null

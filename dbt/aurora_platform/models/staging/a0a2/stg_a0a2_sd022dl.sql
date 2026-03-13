@@ -1,0 +1,2 @@
+{{ config(materialized='view') }}
+{{ stg_sd022dl('raw_a0a2') }}
